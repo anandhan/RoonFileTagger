@@ -1,21 +1,20 @@
 class AudioTagger
   def initialize(config)
     @config = config
-    @gracenote_config = config['gracenote']
+    @api_config = config['theaudiodb']
   end
 
   def fetch_metadata(album_name)
-    # Gracenote API endpoint
-    url = "https://c#{@gracenote_config['client_id']}.web.cddbp.net/webapi/xml/1.0/"
+    # TheAudioDB API endpoint for album search
+    url = "#{@api_config['base_url']}/#{@api_config['api_key']}/searchalbum.php"
     
-    # Construct the query
+    # Construct the query - we'll use a simple search for now
+    # You might want to split album_name into artist and album parts for better results
     query = {
-      client: @gracenote_config['client_id'],
-      client_tag: @gracenote_config['client_tag'],
-      album: album_name
+      s: album_name
     }
     
-    # Make the API request
+    @logger.debug("Fetching metadata from TheAudioDB for: #{album_name}")
     response = HTTParty.get(url, query: query)
     
     # Parse the response
@@ -39,16 +38,31 @@ class AudioTagger
 
   private
 
-  def parse_metadata_response(xml_response)
-    doc = Nokogiri::XML(xml_response)
+  def parse_metadata_response(json_response)
+    data = JSON.parse(json_response)
     
-    {
-      artist: doc.at_xpath('//ARTIST')&.text,
-      album: doc.at_xpath('//ALBUM')&.text,
-      title: doc.at_xpath('//TITLE')&.text,
-      composer: doc.at_xpath('//COMPOSER')&.text,
-      genre: doc.at_xpath('//GENRE')&.text,
-      year: doc.at_xpath('//YEAR')&.text
-    }
+    # TheAudioDB returns an array of albums in the 'album' key
+    if data['album'] && data['album'].any?
+      album = data['album'].first
+      
+      {
+        artist: album['strArtist'],
+        album: album['strAlbum'],
+        title: album['strTrack'] || nil,  # Might not be available in album search
+        composer: nil,  # TheAudioDB doesn't provide composer info
+        genre: album['strGenre'],
+        year: album['intYearReleased']
+      }
+    else
+      @logger.warn("No metadata found for album")
+      {
+        artist: nil,
+        album: nil,
+        title: nil,
+        composer: nil,
+        genre: nil,
+        year: nil
+      }
+    end
   end
 end 

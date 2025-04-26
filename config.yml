@@ -14,9 +14,9 @@ audio_file_patterns:
 name_correction_file: "config/name_corrections.txt"
 
 # API settings
-gracenote:
-  client_id: "YOUR_CLIENT_ID"  # Replace with your actual Gracenote client ID
-  client_tag: "YOUR_CLIENT_TAG"  # Replace with your actual Gracenote client tag
+theaudiodb:
+  api_key: "2"  # Default test API key
+  base_url: "https://www.theaudiodb.com/api/v1/json"
 
 # Logging settings
 logging:

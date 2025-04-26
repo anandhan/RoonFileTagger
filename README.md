@@ -1,6 +1,62 @@
 # RoonFileTagger
 
-A Ruby application that recursively scans directories for audio files and tags them with metadata, with a focus on name corrections using JSON files.
+A Ruby application for tagging audio files with metadata.
+
+## Prerequisites
+
+- Ruby (2.7 or higher)
+- Bundler (`gem install bundler`)
+- TagLib library (for taglib-ruby gem)
+
+### Installing TagLib on macOS
+
+```bash
+brew install taglib
+```
+
+## Installation
+
+1. Clone this repository:
+```bash
+git clone https://github.com/anandhan/RoonFileTagger.git
+cd RoonFileTagger
+```
+
+2. Install dependencies:
+```bash
+bundle install
+```
+
+3. Configure the scan directories:
+   - Edit `config/scan_directories.txt` to add the paths of directories you want to scan
+   - Each directory path should be on a new line
+
+4. Configure the application:
+   - Edit `config.yml` to adjust settings like:
+     - File patterns to scan
+     - Number of parallel threads
+     - Logging level
+
+## Usage
+
+Run the application:
+```bash
+ruby lib/roon_tagger.rb
+```
+
+## Configuration
+
+### scan_directories.txt
+Add the paths of directories containing audio files you want to process. One path per line.
+
+### config.yml
+- `audio_file_patterns`: File extensions to scan (e.g., *.mp3, *.flac)
+- `parallel`: Thread settings for parallel processing
+- `logging`: Log file location and level
+
+## Logging
+
+Logs are stored in the `logs` directory. The main log file is `roon_tagger.log`.
 
 ## Features
 
@@ -11,57 +67,7 @@ A Ruby application that recursively scans directories for audio files and tags t
 - Detailed logging
 - Supports multiple audio formats (MP3, FLAC, M4A)
 
-## Prerequisites
-
-- Ruby 2.7 or higher
-- TagLib development libraries
-
-## Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   bundle install
-   ```
-
-3. Install TagLib development libraries:
-   - macOS: `brew install taglib`
-   - Ubuntu/Debian: `sudo apt-get install libtag1-dev`
-   - Fedora: `sudo dnf install taglib-devel`
-
-4. Create a `config.yml` file (see example below)
-
-## Configuration
-
-### config.yml
-
-```yaml
-# Directory settings
-scan_directories_file: "config/scan_directories.txt"  # File containing list of directories to scan
-
-# File patterns to scan
-audio_file_patterns:
-  - "*.mp3"
-  - "*.flac"
-  - "*.m4a"
-  - "*.wav"
-
-# Logging settings
-logging:
-  level: "INFO"
-  file: "logs/roon_tagger.log"
-```
-
-### Scan Directories
-
-Create a file at `config/scan_directories.txt` with the following format:
-```
-# Lines starting with # are comments
-/path/to/your/music/library1
-/path/to/your/music/library2
-```
-
-### Name Corrections
+## Name Corrections
 
 To specify the correct name for a composer and album artist in an album directory:
 
@@ -92,17 +98,6 @@ The application will:
 2. Look for `name_to_use.json` in each album directory
 3. If found, use the specified name for both composer and album artist tags
 4. Apply the tags to all audio files in that directory
-
-## Usage
-
-Run the application:
-```bash
-ruby lib/roon_tagger.rb
-```
-
-## Logging
-
-Logs are written to the file specified in the configuration. Check this file for details about the tagging process and any errors that occur.
 
 ## Contributing
 

@@ -7,4 +7,5 @@
 # /Users/username/Music/Indian
 # /Users/username/Music/Rock
 
-# Add your music directories below: 
+# Add your music directories below:
+/Users/anandhansubbiah/Documents/Imman 

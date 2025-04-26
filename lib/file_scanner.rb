@@ -2,9 +2,8 @@ class FileScanner
   def initialize(config)
     @config = config
     @patterns = config['audio_file_patterns']
+    setup_logger
     @scan_directories = load_scan_directories
-    @logger = Logger.new(config['logging']['file'])
-    @logger.level = Logger.const_get(config['logging']['level'])
   end
 
   def scan
@@ -34,6 +33,11 @@ class FileScanner
   end
 
   private
+
+  def setup_logger
+    @logger = Logger.new(@config['logging']['file'])
+    @logger.level = Logger.const_get(@config['logging']['level'])
+  end
 
   def load_scan_directories
     directories = []

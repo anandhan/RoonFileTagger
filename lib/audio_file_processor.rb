@@ -8,13 +8,19 @@ class AudioFileProcessor
   def process_directory(directory)
     @logger.info("Processing directory: #{directory}")
     
-    # Check for name_to_use.txt in the directory
-    name_to_use_file = File.join(directory, 'name_to_use.txt')
+    # Check for name_to_use.json in the directory
+    name_to_use_file = File.join(directory, 'name_to_use.json')
     name_to_use = if File.exist?(name_to_use_file)
-      @logger.info("Found name_to_use.txt in #{directory}")
-      File.read(name_to_use_file).strip
+      @logger.info("Found name_to_use.json in #{directory}")
+      begin
+        json_data = JSON.parse(File.read(name_to_use_file))
+        json_data['name']
+      rescue JSON::ParserError => e
+        @logger.error("Error parsing name_to_use.json in #{directory}: #{e.message}")
+        nil
+      end
     else
-      @logger.info("No name_to_use.txt found in #{directory}")
+      @logger.info("No name_to_use.json found in #{directory}")
       nil
     end
 

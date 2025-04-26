@@ -1,0 +1,14 @@
+# Indian Music Artist Name Corrections
+# Format: incorrect_name|correct_name
+
+# Composers
+A.R.Rahman|A.R. Rahman
+Ilayaraja|Ilaiyaraaja
+Harris Jayaraj|Harris Jayaraj
+Yuvan Shankar Raja|Yuvan Shankar Raja
+
+# Singers
+S.P.Balasubramaniam|S.P. Balasubrahmanyam
+K.J.Yesudas|K.J. Yesudas
+Shreya Ghoshal|Shreya Ghoshal
+Sid Sriram|Sid Sriram 

@@ -1,0 +1,25 @@
+# Configuration for RoonFileTagger
+
+# Directory settings
+scan_directories:
+  - "/path/to/your/music/library"  # Replace with your actual music directory
+
+# File patterns to scan
+audio_file_patterns:
+  - "*.mp3"
+  - "*.flac"
+  - "*.m4a"
+  - "*.wav"
+
+# Name correction file location
+name_correction_file: "config/name_corrections.txt"
+
+# API settings
+gracenote:
+  client_id: "YOUR_CLIENT_ID"  # Replace with your actual Gracenote client ID
+  client_tag: "YOUR_CLIENT_TAG"  # Replace with your actual Gracenote client tag
+
+# Logging settings
+logging:
+  level: "INFO"
+  file: "logs/roon_tagger.log" 

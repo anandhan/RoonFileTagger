@@ -25,7 +25,7 @@ class AudioFileProcessor
     end
 
     # Process each audio file in the directory
-    Dir.glob(File.join(directory, '*.{mp3,flac,m4a}')) do |file_path|
+    Dir.glob(File.join(directory, '*.{mp3,flac,m4a,wav}')) do |file_path|
       process_file(file_path, name_to_use)
     end
   end
@@ -36,7 +36,7 @@ class AudioFileProcessor
     # Extract album name from directory
     album_name = File.dirname(file_path).split('/').last
     
-    # Fetch metadata from TheAudioDB
+    # Fetch metadata from file
     metadata = @tagger.fetch_metadata(album_name, file_path)
     
     # If we have a name_to_use, update only composer and album artist
@@ -60,4 +60,4 @@ class AudioFileProcessor
     @logger = Logger.new(@config['logging']['file'])
     @logger.level = Logger.const_get(@config['logging']['level'])
   end
-end 
+end # Test edit

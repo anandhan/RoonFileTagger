@@ -1,8 +1,7 @@
 # Configuration for RoonFileTagger
 
 # Directory settings
-scan_directories:
-  - "/path/to/your/music/library"  # Replace with your actual music directory
+scan_directories_file: "config/scan_directories.txt"  # File containing list of directories to scan
 
 # File patterns to scan
 audio_file_patterns:

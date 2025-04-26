@@ -1,10 +1,12 @@
-{
-  "directories": [
-    {
-      "path": "/Volumes/Storage/Songs/G.V. Prakash Kumar",
-      "use_audiodb": true,
-      "description": "G.V. Prakash Kumar's music collection"
-    },
-   
-  ]
-} 
+[
+  {
+    "path": "/Volumes/Storage/Songs/G.V. Prakash Kumar",
+    "use_audiodb": false,
+    "description": "G.V. Prakash Kumar's music collection"
+  },
+  {
+    "path": "/Volumes/Storage/Songs/English/Ray Of Light",
+    "use_audiodb": true,
+    "description": "Madonna's Ray of Light album"
+  }
+] 

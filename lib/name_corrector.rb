@@ -1,30 +1,42 @@
+require 'json'
+require 'logger'
+
 class NameCorrector
-  def initialize(config)
-    @config = config
-    @logger = Logger.new(config['logging']['file'])
-    @logger.level = Logger.const_get(config['logging']['level'])
+  def initialize(logger)
+    @logger = logger
   end
 
-  def correct_names(metadata)
-    corrected = metadata.dup
+  def process_file(file)
+    @logger.debug("Processing file: #{file}")
     
-    # Check for name_to_use.json in the album directory
-    if metadata[:album_directory]
-      name_to_use_file = File.join(metadata[:album_directory], 'name_to_use.json')
-      if File.exist?(name_to_use_file)
-        begin
-          json_data = JSON.parse(File.read(name_to_use_file))
-          if json_data['name']
-            @logger.info("Using name correction from #{name_to_use_file}: #{json_data['name']}")
-            corrected[:composer] = json_data['name']
-            corrected[:album_artist] = json_data['name']
-          end
-        rescue JSON::ParserError => e
-          @logger.error("Error parsing name_to_use.json at #{name_to_use_file}: #{e.message}")
+    album_directory = File.dirname(file)
+    album_name = File.basename(album_directory)
+    
+    metadata = {
+      album_directory: album_directory,
+      album: album_name,
+      title: File.basename(file, '.*').sub(/^\d+\s*-\s*/, '')
+    }
+    
+    if File.exist?(File.join(album_directory, 'name_to_use.json'))
+      begin
+        json_path = File.join(album_directory, 'name_to_use.json')
+        json_data = JSON.parse(File.read(json_path))
+        
+        if json_data['name']
+          @logger.info("Found name correction in #{json_path}: #{json_data['name']}")
+          metadata[:album_artist] = json_data['name']
+          metadata[:composer] = json_data['name']
         end
+      rescue JSON::ParserError => e
+        @logger.error("Error parsing name_to_use.json in #{album_directory}: #{e.message}")
+      rescue StandardError => e
+        @logger.error("Error processing name correction for #{file}: #{e.message}")
+        return nil
       end
     end
     
-    corrected
+    @logger.debug("Final metadata: #{metadata.inspect}")
+    metadata
   end
 end 

@@ -1,7 +1,7 @@
 # Configuration for RoonFileTagger
 
 # Directory settings
-scan_directories_file: "config/scan_directories.txt"  # File containing list of directories to scan
+scan_directories_file: "config/scan_directories.json"  # File containing list of directories to scan
 
 # File patterns to scan
 audio_file_patterns:
@@ -14,6 +14,12 @@ audio_file_patterns:
 parallel:
   enabled: true
   threads: 4  # Number of threads to use for parallel processing
+
+# AudioDB settings
+audiodb:
+  enabled: true
+  search_retries: 3
+  search_delay: 1  # Delay in seconds between retries
 
 # Logging settings
 logging:

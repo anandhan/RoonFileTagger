@@ -1,69 +1,126 @@
+require 'logger'
+require 'taglib'
+require 'json'
+
 class FileScanner
-  def initialize(config)
-    @config = config
-    @patterns = config['audio_file_patterns']
-    setup_logger
-    @scan_directories = load_scan_directories
+  attr_reader :directories
+
+  def initialize(logger)
+    @logger = logger
+    @directories = []
+    @use_audiodb = {}
+    @directory_metadata = {}
+    @audio_patterns = ['*.flac', '*.mp3', '*.m4a', '*.wav']
   end
 
-  def scan
-    audio_files = []
+  def load_scan_directories
+    puts "Loading scan directories from config/scan_directories.json"
+    @logger.info("Loading scan directories from config/scan_directories.json")
     
-    @logger.info("Starting directory scan")
-    @logger.info("Scanning #{@scan_directories.size} directories")
-    @logger.info("Using patterns: #{@patterns.join(', ')}")
-    
-    @scan_directories.each do |directory|
-      @logger.info("Scanning directory: #{directory}")
-      puts "Scanning directory: #{directory}"
-      next unless File.directory?(directory)
-      puts "Directory exists: #{directory}"
+    begin
+      json_data = File.read('config/scan_directories.json')
+      directories = JSON.parse(json_data)
+      puts "Found #{directories.size} directories in config"
+      @logger.info("Found #{directories.size} directories in config")
       
-      @patterns.each do |pattern|
-        @logger.debug("Searching for pattern: #{pattern}")
-        puts "Searching for pattern: #{pattern}"
-        Dir.glob(File.join(directory, '**', pattern)) do |file|
-          if File.file?(file)
-            audio_files << file
-            @logger.debug("Found audio file: #{file}")
-            puts "Found audio file: #{file}"
-          end
+      directories.each do |dir|
+        path = dir['path']
+        puts "Checking directory: #{path}"
+        @logger.info("Checking directory: #{path}")
+        
+        if File.directory?(path)
+          puts "Directory exists: #{path}"
+          @logger.info("Directory exists: #{path}")
+          @directories << path
+        else
+          puts "Directory not found: #{path}"
+          @logger.warn("Directory not found: #{path}")
         end
+      end
+      
+      puts "Total valid directories to scan: #{@directories.size}"
+      @logger.info("Total valid directories to scan: #{@directories.size}")
+      @directories
+    rescue JSON::ParserError => e
+      puts "Error parsing scan_directories.json: #{e.message}"
+      @logger.error("Error parsing scan_directories.json: #{e.message}")
+      []
+    rescue StandardError => e
+      puts "Error loading scan directories: #{e.message}"
+      @logger.error("Error loading scan directories: #{e.message}")
+      []
+    end
+  end
+
+  def scan_directories(directories)
+    puts "Starting directory scan..."
+    @logger.info("Starting directory scan")
+    
+    audio_files = []
+    directories.each do |dir|
+      puts "Scanning directory: #{dir}"
+      @logger.info("Scanning directory: #{dir}")
+      
+      Dir.glob(File.join(dir, '**', '*.{flac,mp3,m4a}')).each do |file|
+        puts "Found audio file: #{file}"
+        @logger.info("Found audio file: #{file}")
+        audio_files << file
       end
     end
     
-    @logger.info("Scan completed. Found #{audio_files.size} audio files")
-    puts "Scan completed. Found #{audio_files.size} audio files"
+    puts "Scan complete. Found #{audio_files.size} audio files"
+    @logger.info("Scan complete. Found #{audio_files.size} audio files")
     audio_files
+  end
+
+  def scan
+    @logger.info("Starting file scan")
+    audio_files = []
+    
+    begin
+      scan_dirs = load_scan_directories
+      @logger.info("Loaded #{scan_dirs.size} directories to scan")
+      
+      scan_dirs.each do |dir|
+        if Dir.exist?(dir)
+          @logger.info("Scanning directory: #{dir}")
+          @audio_patterns.each do |pattern|
+            Dir.glob(File.join(dir, '**', pattern)).each do |file|
+              @logger.debug("Found audio file: #{file}")
+              audio_files << file
+            end
+          end
+        else
+          @logger.warn("Directory does not exist: #{dir}")
+        end
+      end
+      
+      @logger.info("Found #{audio_files.size} audio files")
+      audio_files
+      
+    rescue StandardError => e
+      @logger.error("Error during file scan: #{e.message}")
+      []
+    end
+  end
+
+  def use_audiodb_for?(directory)
+    @use_audiodb[directory] || false
+  end
+
+  def get_directory_metadata(directory)
+    @directory_metadata[directory] || {}
   end
 
   private
 
-  def setup_logger
-    @logger = Logger.new(@config['logging']['file'])
-    @logger.level = Logger.const_get(@config['logging']['level'])
-  end
-
-  def load_scan_directories
-    directories = []
-    file_path = @config['scan_directories_file']
-    
-    @logger.info("Loading scan directories from: #{file_path}")
-    puts "Loading scan directories from: #{file_path}"
-    
-    return directories unless File.exist?(file_path)
-    
-    File.readlines(file_path).each do |line|
-      line = line.strip
-      puts "Processing line: '#{line}'"
-      next if line.empty? || line.start_with?('#')
-      directories << line
-      @logger.debug("Added directory to scan: #{line}")
-      puts "Added directory to scan: #{line}"
-    end
-    
-    @logger.info("Loaded #{directories.size} directories to scan")
-    puts "Loaded #{directories.size} directories to scan"
-    directories
+  def extract_metadata_from_directory(dir)
+    # Extract metadata from directory name or structure
+    {
+      artist: nil,
+      album: File.basename(dir),
+      genre: nil,
+      year: nil
+    }
   end
 end 

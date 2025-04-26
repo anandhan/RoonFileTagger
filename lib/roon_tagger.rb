@@ -8,53 +8,49 @@ require_relative 'audio_tagger'
 require_relative 'name_corrector'
 
 class RoonTagger
-  def initialize(config_path = 'config.yml')
-    puts "Loading configuration from #{config_path}"
-    @config = YAML.load_file(config_path)
+  def initialize
+    @config = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'config', 'config.yml'))
     setup_logger
-    @file_scanner = FileScanner.new(@config)
-    @audio_tagger = AudioTagger.new(@config)
-    @name_corrector = NameCorrector.new(@config)
-    puts "Initialization complete"
+    @file_scanner = FileScanner.new(@logger)
+    @audio_tagger = AudioTagger.new(@logger)
+    @name_corrector = NameCorrector.new(@logger)
+    @num_threads = @config['parallel']['threads'] || 4
   end
 
   def run
-    puts "Starting RoonTagger"
+    puts "Starting RoonTagger..."
     @logger.info("Starting RoonTagger")
-    @logger.info("Configuration loaded from #{@config['scan_directories_file']}")
+    
+    # Load scan directories
+    puts "Loading scan directories..."
+    @logger.info("Loading scan directories")
+    directories = @file_scanner.load_scan_directories
+    puts "Found #{directories.size} directories to scan"
+    @logger.info("Found #{directories.size} directories to scan")
     
     # Scan for audio files
     puts "Scanning for audio files..."
-    @logger.info("Scanning for audio files...")
-    audio_files = @file_scanner.scan
+    @logger.info("Scanning for audio files")
+    audio_files = @file_scanner.scan_directories(directories)
     puts "Found #{audio_files.size} audio files to process"
     @logger.info("Found #{audio_files.size} audio files to process")
     
-    # Process files in parallel
-    threads = @config['parallel']['enabled'] ? @config['parallel']['threads'] : 1
-    puts "Starting parallel processing with #{threads} threads"
-    @logger.info("Starting parallel processing with #{threads} threads")
-    processed_count = 0
-    total_files = audio_files.size
-    
-    Parallel.each(audio_files, in_threads: threads) do |file|
-      begin
-        process_file(file)
-        processed_count += 1
-        puts "Progress: #{processed_count}/#{total_files} files processed (#{(processed_count.to_f/total_files*100).round(2)}%)"
-        @logger.info("Progress: #{processed_count}/#{total_files} files processed (#{(processed_count.to_f/total_files*100).round(2)}%)")
-      rescue => e
-        puts "Error processing #{file}: #{e.message}"
-        puts e.backtrace
-        @logger.error("Error processing #{file}: #{e.message}")
-        @logger.error(e.backtrace.join("\n"))
-      end
+    if audio_files.empty?
+      puts "No audio files found to process"
+      @logger.warn("No audio files found to process")
+      return
     end
     
-    puts "RoonTagger completed"
-    puts "Successfully processed #{processed_count} out of #{total_files} files"
-    @logger.info("RoonTagger completed")
-    @logger.info("Successfully processed #{processed_count} out of #{total_files} files")
+    # Process files in parallel
+    puts "Processing files with #{@config['parallel']['threads']} threads..."
+    @logger.info("Processing files with #{@config['parallel']['threads']} threads")
+    
+    Parallel.each(audio_files, in_threads: @config['parallel']['threads']) do |file|
+      process_file(file)
+    end
+    
+    puts "Processing complete"
+    @logger.info("Processing complete")
   end
 
   private
@@ -74,31 +70,21 @@ class RoonTagger
   end
 
   def process_file(file)
-    puts "Processing file: #{file}"
     @logger.info("Processing file: #{file}")
-    
-    # Get directory name and path for album info
-    album_directory = File.dirname(file)
-    album_name = File.basename(album_directory)
-    puts "Album name derived from directory: #{album_name}"
-    @logger.debug("Album name derived from directory: #{album_name}")
-    
-    # Get basic metadata from file name
-    metadata = @audio_tagger.fetch_metadata(album_name, file)
-    metadata[:album_directory] = album_directory
-    
-    # Apply name corrections from name_to_use.json if present
-    metadata = @name_corrector.correct_names(metadata)
-    puts "Final metadata: #{metadata.inspect}"
-    @logger.debug("Final metadata: #{metadata.inspect}")
-    
-    # Apply tags to the file
-    puts "Applying tags to file"
-    @logger.debug("Applying tags to file")
-    @audio_tagger.apply_tags(file, metadata)
-    
-    puts "Successfully processed: #{file}"
-    @logger.info("Successfully processed: #{file}")
+    begin
+      metadata = @name_corrector.process_file(file)
+      if metadata
+        if @audio_tagger.apply_tags(file, metadata)
+          @logger.info("Successfully processed: #{file}")
+        else
+          @logger.error("Failed to apply tags to: #{file}")
+        end
+      else
+        @logger.warn("No metadata corrections needed for: #{file}")
+      end
+    rescue StandardError => e
+      @logger.error("Error processing #{file}: #{e.message}")
+    end
   end
 end
 

@@ -1,0 +1,21 @@
+# Configuration for RoonFileTagger
+
+# Directory settings
+scan_directories_file: "config/scan_directories.json"  # File containing list of directories to scan
+
+# File patterns to scan
+audio_file_patterns:
+  - "*.mp3"
+  - "*.flac"
+  - "*.m4a"
+  - "*.wav"
+
+# Parallel processing settings
+parallel:
+  enabled: true
+  threads: 4  # Number of threads to use for parallel processing
+
+# Logging settings
+logging:
+  level: "INFO"
+  file: "logs/roon_tagger.log" 

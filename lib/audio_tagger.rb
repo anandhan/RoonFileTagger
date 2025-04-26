@@ -52,25 +52,31 @@ class AudioTagger
     
     TagLib::FileRef.open(file_path) do |file|
       tag = file.tag
-      tag.artist = metadata[:artist] if metadata[:artist]
-      tag.album = metadata[:album] if metadata[:album]
-      tag.title = metadata[:title] if metadata[:title]
-      tag.genre = metadata[:genre] if metadata[:genre]
-      tag.year = metadata[:year].to_i if metadata[:year]
-    end
-
-    # Use ID3v2 specific API for composer tag
-    TagLib::MPEG::File.open(file_path) do |file|
-      id3v2_tag = file.id3v2_tag(true) # Create if not exists
-      
+      # Only update composer and album artist
       if metadata[:composer]
-        # Remove existing TCOM frames if any
-        id3v2_tag.remove_frames('TCOM')
-        
-        # Create new composer frame
-        frame = TagLib::ID3v2::TextIdentificationFrame.new('TCOM', TagLib::String::UTF8)
-        frame.text = metadata[:composer]
-        id3v2_tag.add_frame(frame)
+        # Use ID3v2 specific API for composer tag
+        if file.is_a?(TagLib::MPEG::File)
+          id3v2_tag = file.id3v2_tag(true) # Create if not exists
+          # Remove existing TCOM frames if any
+          id3v2_tag.remove_frames('TCOM')
+          # Create new composer frame
+          frame = TagLib::ID3v2::TextIdentificationFrame.new('TCOM', TagLib::String::UTF8)
+          frame.text = metadata[:composer]
+          id3v2_tag.add_frame(frame)
+        end
+      end
+      
+      if metadata[:album_artist]
+        # Use ID3v2 specific API for album artist tag
+        if file.is_a?(TagLib::MPEG::File)
+          id3v2_tag = file.id3v2_tag(true) # Create if not exists
+          # Remove existing TPE2 frames if any
+          id3v2_tag.remove_frames('TPE2')
+          # Create new album artist frame
+          frame = TagLib::ID3v2::TextIdentificationFrame.new('TPE2', TagLib::String::UTF8)
+          frame.text = metadata[:album_artist]
+          id3v2_tag.add_frame(frame)
+        end
       end
       
       file.save

@@ -2,8 +2,6 @@ require 'yaml'
 require 'fileutils'
 require 'logger'
 require 'taglib'
-require 'httparty'
-require 'nokogiri'
 require 'parallel'
 require_relative 'file_scanner'
 require_relative 'audio_tagger'
@@ -16,7 +14,7 @@ class RoonTagger
     setup_logger
     @file_scanner = FileScanner.new(@config)
     @audio_tagger = AudioTagger.new(@config)
-    @name_corrector = NameCorrector.new(@config['name_correction_file'])
+    @name_corrector = NameCorrector.new(@config)
     puts "Initialization complete"
   end
 
@@ -33,12 +31,13 @@ class RoonTagger
     @logger.info("Found #{audio_files.size} audio files to process")
     
     # Process files in parallel
-    puts "Starting parallel processing with 4 threads"
-    @logger.info("Starting parallel processing with 4 threads")
+    threads = @config['parallel']['enabled'] ? @config['parallel']['threads'] : 1
+    puts "Starting parallel processing with #{threads} threads"
+    @logger.info("Starting parallel processing with #{threads} threads")
     processed_count = 0
     total_files = audio_files.size
     
-    Parallel.each(audio_files, in_threads: 4) do |file|
+    Parallel.each(audio_files, in_threads: threads) do |file|
       begin
         process_file(file)
         processed_count += 1
@@ -78,29 +77,25 @@ class RoonTagger
     puts "Processing file: #{file}"
     @logger.info("Processing file: #{file}")
     
-    # Get directory name for album info
-    album_name = File.basename(File.dirname(file))
+    # Get directory name and path for album info
+    album_directory = File.dirname(file)
+    album_name = File.basename(album_directory)
     puts "Album name derived from directory: #{album_name}"
     @logger.debug("Album name derived from directory: #{album_name}")
     
-    # Get metadata from TheAudioDB
-    puts "Fetching metadata from TheAudioDB for album: #{album_name}"
-    @logger.debug("Fetching metadata from TheAudioDB for album: #{album_name}")
-    metadata = @audio_tagger.fetch_metadata(album_name)
-    puts "Retrieved metadata: #{metadata.inspect}"
-    @logger.debug("Retrieved metadata: #{metadata.inspect}")
+    # Get basic metadata from file name
+    metadata = @audio_tagger.fetch_metadata(album_name, file)
+    metadata[:album_directory] = album_directory
     
-    # Correct names using the correction file
-    puts "Applying name corrections"
-    @logger.debug("Applying name corrections")
-    corrected_metadata = @name_corrector.correct_names(metadata)
-    puts "Corrected metadata: #{corrected_metadata.inspect}"
-    @logger.debug("Corrected metadata: #{corrected_metadata.inspect}")
+    # Apply name corrections from name_to_use.json if present
+    metadata = @name_corrector.correct_names(metadata)
+    puts "Final metadata: #{metadata.inspect}"
+    @logger.debug("Final metadata: #{metadata.inspect}")
     
     # Apply tags to the file
     puts "Applying tags to file"
     @logger.debug("Applying tags to file")
-    @audio_tagger.apply_tags(file, corrected_metadata)
+    @audio_tagger.apply_tags(file, metadata)
     
     puts "Successfully processed: #{file}"
     @logger.info("Successfully processed: #{file}")

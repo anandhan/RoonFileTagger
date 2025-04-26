@@ -15,20 +15,25 @@ class FileScanner
     
     @scan_directories.each do |directory|
       @logger.info("Scanning directory: #{directory}")
+      puts "Scanning directory: #{directory}"
       next unless File.directory?(directory)
+      puts "Directory exists: #{directory}"
       
       @patterns.each do |pattern|
         @logger.debug("Searching for pattern: #{pattern}")
+        puts "Searching for pattern: #{pattern}"
         Dir.glob(File.join(directory, '**', pattern)) do |file|
           if File.file?(file)
             audio_files << file
             @logger.debug("Found audio file: #{file}")
+            puts "Found audio file: #{file}"
           end
         end
       end
     end
     
     @logger.info("Scan completed. Found #{audio_files.size} audio files")
+    puts "Scan completed. Found #{audio_files.size} audio files"
     audio_files
   end
 
@@ -44,17 +49,21 @@ class FileScanner
     file_path = @config['scan_directories_file']
     
     @logger.info("Loading scan directories from: #{file_path}")
+    puts "Loading scan directories from: #{file_path}"
     
     return directories unless File.exist?(file_path)
     
     File.readlines(file_path).each do |line|
       line = line.strip
+      puts "Processing line: '#{line}'"
       next if line.empty? || line.start_with?('#')
       directories << line
       @logger.debug("Added directory to scan: #{line}")
+      puts "Added directory to scan: #{line}"
     end
     
     @logger.info("Loaded #{directories.size} directories to scan")
+    puts "Loaded #{directories.size} directories to scan"
     directories
   end
 end 

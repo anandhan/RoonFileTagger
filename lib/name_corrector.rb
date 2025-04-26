@@ -1,55 +1,30 @@
 class NameCorrector
-  def initialize(correction_file_path)
-    @correction_file_path = correction_file_path
-    @corrections = load_corrections
+  def initialize(config)
+    @config = config
+    @logger = Logger.new(config['logging']['file'])
+    @logger.level = Logger.const_get(config['logging']['level'])
   end
 
   def correct_names(metadata)
     corrected = metadata.dup
     
-    # Correct artist name
-    if metadata[:artist]
-      corrected[:artist] = find_correction(metadata[:artist])
-    end
-    
-    # Correct composer name
-    if metadata[:composer]
-      corrected[:composer] = find_correction(metadata[:composer])
-    end
-    
-    corrected
-  end
-
-  private
-
-  def load_corrections
-    corrections = {}
-    
-    return corrections unless File.exist?(@correction_file_path)
-    
-    File.readlines(@correction_file_path).each do |line|
-      next if line.strip.empty? || line.start_with?('#')
-      
-      incorrect, correct = line.strip.split('|').map(&:strip)
-      corrections[incorrect.downcase] = correct if incorrect && correct
-    end
-    
-    corrections
-  end
-
-  def find_correction(name)
-    # Try exact match first
-    return @corrections[name.downcase] if @corrections.key?(name.downcase)
-    
-    # Try fuzzy matching
-    @corrections.each do |incorrect, correct|
-      # Simple similarity check - you might want to use a more sophisticated algorithm
-      if name.downcase.include?(incorrect) || incorrect.include?(name.downcase)
-        return correct
+    # Check for name_to_use.json in the album directory
+    if metadata[:album_directory]
+      name_to_use_file = File.join(metadata[:album_directory], 'name_to_use.json')
+      if File.exist?(name_to_use_file)
+        begin
+          json_data = JSON.parse(File.read(name_to_use_file))
+          if json_data['name']
+            @logger.info("Using name correction from #{name_to_use_file}: #{json_data['name']}")
+            corrected[:composer] = json_data['name']
+            corrected[:album_artist] = json_data['name']
+          end
+        rescue JSON::ParserError => e
+          @logger.error("Error parsing name_to_use.json at #{name_to_use_file}: #{e.message}")
+        end
       end
     end
     
-    # Return original if no correction found
-    name
+    corrected
   end
 end 

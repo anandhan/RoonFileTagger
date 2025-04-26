@@ -1,20 +1,19 @@
 # RoonFileTagger
 
-A Ruby application that recursively scans directories for audio files and tags them using Gracenote metadata, with support for name corrections.
+A Ruby application that recursively scans directories for audio files and tags them with metadata, with a focus on name corrections using JSON files.
 
 ## Features
 
 - Recursively scans directories for audio files
-- Uses Gracenote API to fetch metadata
-- Supports name corrections for artists and composers
+- Supports name corrections for composers and album artists using JSON files
 - Parallel processing for faster tagging
 - Configurable through YAML file
 - Detailed logging
+- Supports multiple audio formats (MP3, FLAC, M4A)
 
 ## Prerequisites
 
 - Ruby 2.7 or higher
-- Gracenote API credentials
 - TagLib development libraries
 
 ## Installation
@@ -31,46 +30,68 @@ A Ruby application that recursively scans directories for audio files and tags t
    - Fedora: `sudo dnf install taglib-devel`
 
 4. Create a `config.yml` file (see example below)
-5. Create a name corrections file at `config/name_corrections.txt`
 
 ## Configuration
 
 ### config.yml
 
 ```yaml
-scan_directories:
-  - "/path/to/your/music/library"
+# Directory settings
+scan_directories_file: "config/scan_directories.txt"  # File containing list of directories to scan
 
+# File patterns to scan
 audio_file_patterns:
   - "*.mp3"
   - "*.flac"
   - "*.m4a"
   - "*.wav"
 
-name_correction_file: "config/name_corrections.txt"
-
-gracenote:
-  client_id: "YOUR_CLIENT_ID"
-  client_tag: "YOUR_CLIENT_TAG"
-
+# Logging settings
 logging:
   level: "INFO"
   file: "logs/roon_tagger.log"
 ```
 
-### Name Corrections File
+### Scan Directories
 
-Create a file at `config/name_corrections.txt` with the following format:
+Create a file at `config/scan_directories.txt` with the following format:
 ```
-incorrect_name|correct_name
-another_incorrect_name|another_correct_name
+# Lines starting with # are comments
+/path/to/your/music/library1
+/path/to/your/music/library2
 ```
 
-Example:
+### Name Corrections
+
+To specify the correct name for a composer and album artist in an album directory:
+
+1. Create a `name_to_use.json` file in the album directory
+2. Add the correct name in the following format:
+
+```json
+{
+  "name": "Correct Artist Name"
+}
 ```
-A.R. Rahman|A.R. Rahman
-Ilayaraja|Ilaiyaraaja
+
+Example directory structure:
 ```
+Music/
+├── Album1/
+│   ├── name_to_use.json  # {"name": "A.R. Rahman"}
+│   ├── 01 - Song1.mp3
+│   └── 02 - Song2.mp3
+└── Album2/
+    ├── name_to_use.json  # {"name": "Ilaiyaraaja"}
+    ├── 01 - Track1.mp3
+    └── 02 - Track2.mp3
+```
+
+The application will:
+1. Find all audio files in the specified directories
+2. Look for `name_to_use.json` in each album directory
+3. If found, use the specified name for both composer and album artist tags
+4. Apply the tags to all audio files in that directory
 
 ## Usage
 

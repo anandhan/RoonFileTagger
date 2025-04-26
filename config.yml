@@ -10,13 +10,10 @@ audio_file_patterns:
   - "*.m4a"
   - "*.wav"
 
-# Name correction file location
-name_correction_file: "config/name_corrections.txt"
-
-# API settings
-theaudiodb:
-  api_key: "2"  # Default test API key
-  base_url: "https://www.theaudiodb.com/api/v1/json"
+# Parallel processing settings
+parallel:
+  enabled: true
+  threads: 4  # Number of threads to use for parallel processing
 
 # Logging settings
 logging:

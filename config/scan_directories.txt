@@ -8,4 +8,4 @@
 # /Users/username/Music/Rock
 
 # Add your music directories below:
-/Users/anandhansubbiah/Documents/Imman 
+/Volumes/Storage/Songs/G.V. Prakash Kumar 

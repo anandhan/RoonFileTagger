@@ -20,20 +20,31 @@ class RoonTagger
 
   def run
     @logger.info("Starting RoonTagger")
+    @logger.info("Configuration loaded from #{@config['scan_directories_file']}")
     
     # Scan for audio files
+    @logger.info("Scanning for audio files...")
     audio_files = @file_scanner.scan
+    @logger.info("Found #{audio_files.size} audio files to process")
     
     # Process files in parallel
+    @logger.info("Starting parallel processing with 4 threads")
+    processed_count = 0
+    total_files = audio_files.size
+    
     Parallel.each(audio_files, in_threads: 4) do |file|
       begin
         process_file(file)
+        processed_count += 1
+        @logger.info("Progress: #{processed_count}/#{total_files} files processed (#{(processed_count.to_f/total_files*100).round(2)}%)")
       rescue => e
         @logger.error("Error processing #{file}: #{e.message}")
+        @logger.error(e.backtrace.join("\n"))
       end
     end
     
     @logger.info("RoonTagger completed")
+    @logger.info("Successfully processed #{processed_count} out of #{total_files} files")
   end
 
   private
@@ -44,6 +55,11 @@ class RoonTagger
     
     @logger = Logger.new(@config['logging']['file'])
     @logger.level = Logger.const_get(@config['logging']['level'])
+    
+    # Add timestamp to log messages
+    @logger.formatter = proc do |severity, datetime, progname, msg|
+      "#{datetime.strftime('%Y-%m-%d %H:%M:%S')} [#{severity}] #{msg}\n"
+    end
   end
 
   def process_file(file)
@@ -51,14 +67,20 @@ class RoonTagger
     
     # Get directory name for album info
     album_name = File.basename(File.dirname(file))
+    @logger.debug("Album name derived from directory: #{album_name}")
     
     # Get metadata from Gracenote
+    @logger.debug("Fetching metadata from Gracenote for album: #{album_name}")
     metadata = @audio_tagger.fetch_metadata(album_name)
+    @logger.debug("Retrieved metadata: #{metadata.inspect}")
     
     # Correct names using the correction file
+    @logger.debug("Applying name corrections")
     corrected_metadata = @name_corrector.correct_names(metadata)
+    @logger.debug("Corrected metadata: #{corrected_metadata.inspect}")
     
     # Apply tags to the file
+    @logger.debug("Applying tags to file")
     @audio_tagger.apply_tags(file, corrected_metadata)
     
     @logger.info("Successfully processed: #{file}")
